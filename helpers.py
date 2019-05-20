@@ -3,6 +3,7 @@ import urllib.parse
 
 from flask import redirect, render_template, request, session
 from functools import wraps
+from apikey import API_KEY
 
 
 def apology(message, code=400):
@@ -39,7 +40,7 @@ def lookup(symbol):
 
     # Contact API
     try:
-        response = requests.get(f"https://api.iextrading.com/1.0/stock/{urllib.parse.quote_plus(symbol)}/quote")
+        response = requests.get(f"https://www.worldtradingdata.com/api/v1/stock?symbol={symbol}&api_token={API_KEY}")
         response.raise_for_status()
     except requests.RequestException:
         return None
@@ -48,9 +49,9 @@ def lookup(symbol):
     try:
         quote = response.json()
         return {
-            "name": quote["companyName"],
-            "price": float(quote["latestPrice"]),
-            "symbol": quote["symbol"]
+            "name": quote['data'][0]['name'],
+            "price": float(quote['data'][0]['price']),
+            "symbol": quote['data'][0]['symbol']
         }
     except (KeyError, TypeError, ValueError):
         return None

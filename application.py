@@ -38,19 +38,24 @@ Session(app)
 db = SQL("sqlite:///finance.db")
 
 
-@app.route("/", methods="GET")
+@app.route("/", methods=["GET"])
 @login_required
 def index():
     """Show portfolio of stocks"""
-    stocks = db.execute("SELECT symbol, SUM(shares) FROM transactions GROUP BY symbol")
+    stocks = db.execute("SELECT symbol, SUM(shares) FROM transactions WHERE user_id = :id GROUP BY symbol HAVING SUM(shares) > 0", id=session['user_id'])
     portfolio = []
-    for stock in stocks:
-        if stock['SUM(shares)'] > 0:
+    cash = db.execute("SELECT cash from users WHERE id = :id", id=session['user_id'])[0]['cash']
+    networth = 0
+    if stocks:
+        for stock in stocks:
             realtime_stock = lookup(stock['symbol'])
             realtime_stock['shares'] = stock['SUM(shares)']
+            realtime_stock['total'] = stock['SUM(shares)'] * realtime_stock['price']
             portfolio.append(realtime_stock)
+            networth += realtime_stock['total']
+    networth += cash
 
-    return apology("TODO")
+    return render_template("portfolio.html", portfolio=portfolio, cash=cash, networth=networth)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -85,7 +90,7 @@ def buy():
             db.execute("UPDATE users SET cash=:cash WHERE id=:id", cash=cash, id=session["user_id"])
             db.execute("INSERT INTO transactions (user_id, symbol, shares, price) VALUES (:user_id, :symbol, :shares, :price)",
                        user_id=session["user_id"], symbol=stock["symbol"], shares=int(shares), price=stock["price"])
-            return render_template("quote.html")
+            return redirect("/")
 
 
 @app.route("/history")
@@ -177,7 +182,7 @@ def register():
         else:
             db.execute("INSERT INTO users (username,hash) VALUES (:username, :hash);",
                        username=username, hash=generate_password_hash(password))
-            session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username;", username=username)
+            session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username;", username=username)[0]['id']
             return redirect("/")
 
 

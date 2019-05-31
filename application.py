@@ -38,10 +38,18 @@ Session(app)
 db = SQL("sqlite:///finance.db")
 
 
-@app.route("/")
+@app.route("/", methods="GET")
 @login_required
 def index():
     """Show portfolio of stocks"""
+    stocks = db.execute("SELECT symbol, SUM(shares) FROM transactions GROUP BY symbol")
+    portfolio = []
+    for stock in stocks:
+        if stock['SUM(shares)'] > 0:
+            realtime_stock = lookup(stock['symbol'])
+            realtime_stock['shares'] = stock['SUM(shares)']
+            portfolio.append(realtime_stock)
+
     return apology("TODO")
 
 

@@ -180,9 +180,9 @@ def register():
         elif db.execute("SELECT COUNT(*) FROM users WHERE username = :username;", username=username)[0]['COUNT(*)'] > 0:
             return apology("such user already exists", 400)
         else:
-            db.execute("INSERT INTO users (username,hash) VALUES (:username, :hash);",
-                       username=username, hash=generate_password_hash(password))
-            session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username;", username=username)[0]['id']
+            session['user_id'] = db.execute("INSERT INTO users (username,hash) VALUES (:username, :hash);",
+                    username=username, hash=generate_password_hash(password))
+            flash("Registered!")
             return redirect("/")
 
 
@@ -190,7 +190,9 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    if request.method == "GET":
+        stocks = db.execute("SELECT symbol FROM transactions WHERE user_id = :id GROUP BY symbol HAVING SUM(shares) > 0", id=session['user_id'])
+        return render_template("sell.html", stocks=stocks)
 
 
 def errorhandler(e):

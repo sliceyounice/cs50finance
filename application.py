@@ -196,12 +196,18 @@ def sell():
     if request.method == "POST":
         request_symbol = request.form.get("symbol")
         request_shares = request.form.get("shares", type=int)
+        if not request_shares or request_shares <= 0:
+            return apology("Missing shares", 400)
+        if not request_symbol:
+            return apology("Missing symbol", 400)
+
         if request_shares > 0 and request_symbol:
             db_shares = db.execute("SELECT SUM(shares) from transactions WHERE user_id = :id "
                                    "AND symbol = :symbol", symbol=request_symbol, id=session['user_id'])[0]['SUM(shares)']
+            if not db_shares:
+                return apology("wrong symbol", 400)
             if db_shares >= request_shares:
                 stock = lookup(request_symbol)
-                # cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])[0]["cash"]
                 db.execute("UPDATE users SET cash=(SELECT cash FROM users WHERE id = :user_id)+:cash WHERE id=:user_id", user_id=session['user_id'],
                            cash=stock['price']*request_shares)
                 db.execute("INSERT INTO transactions (user_id, symbol, shares, price) VALUES (:user_id, :symbol,"
@@ -211,10 +217,6 @@ def sell():
                 return redirect("/")
             else:
                 return apology("Too many shares", 400)
-        elif request_shares <= 0:
-            return apology("Missing shares", 400)
-        else:
-            return apology("Missing symbol", 400)
 
 
 def errorhandler(e):

@@ -42,7 +42,9 @@ db = SQL("sqlite:///finance.db")
 @login_required
 def index():
     """Show portfolio of stocks"""
-    stocks = db.execute("SELECT symbol, SUM(shares) FROM transactions WHERE user_id = :id GROUP BY symbol HAVING SUM(shares) > 0", id=session['user_id'])
+    stocks = db.execute(
+        "SELECT symbol, SUM(shares) FROM transactions WHERE user_id = :id GROUP BY symbol HAVING SUM(shares) > 0",
+        id=session['user_id'])
     portfolio = []
     cash = db.execute("SELECT cash from users WHERE id = :id", id=session['user_id'])[0]['cash']
     networth = 0
@@ -81,15 +83,15 @@ def buy():
             if not stock or stock["name"] == "N/A":
                 return apology("wrong symbol", 400)
 
-            cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])[0]["cash"]
-            cash -= int(shares)*stock["price"]
+            cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])[0]["cash"] - int(shares) * stock["price"]
 
             if cash < 0:
                 return apology("not enough money", 400)
 
             db.execute("UPDATE users SET cash=:cash WHERE id=:id", cash=cash, id=session["user_id"])
-            db.execute("INSERT INTO transactions (user_id, symbol, shares, price) VALUES (:user_id, :symbol, :shares, :price)",
-                       user_id=session["user_id"], symbol=stock["symbol"], shares=int(shares), price=stock["price"])
+            db.execute(
+                "INSERT INTO transactions (user_id, symbol, shares, price) VALUES (:user_id, :symbol, :shares, :price)",
+                user_id=session["user_id"], symbol=stock["symbol"], shares=int(shares), price=stock["price"])
             return redirect("/")
 
 
@@ -180,9 +182,9 @@ def register():
         elif db.execute("SELECT COUNT(*) FROM users WHERE username = :username;", username=username)[0]['COUNT(*)'] > 0:
             return apology("such user already exists", 400)
         else:
-            db.execute("INSERT INTO users (username,hash) VALUES (:username, :hash);",
-                       username=username, hash=generate_password_hash(password))
-            session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username;", username=username)[0]['id']
+            session['user_id'] = db.execute("INSERT INTO users (username,hash) VALUES (:username, :hash);",
+                                            username=username, hash=generate_password_hash(password))
+            flash("Registered!")
             return redirect("/")
 
 
@@ -190,7 +192,38 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    if request.method == "GET":
+        stocks = db.execute(
+            "SELECT symbol FROM transactions WHERE user_id = :id GROUP BY symbol HAVING SUM(shares) > 0",
+            id=session['user_id'])
+        return render_template("sell.html", stocks=stocks)
+    if request.method == "POST":
+        request_symbol = request.form.get("symbol")
+        request_shares = request.form.get("shares", type=int)
+        if not request_symbol:
+            return apology("Missing symbol", 400)
+
+        if not request_shares or request_shares <= 0:
+            return apology("Missing shares", 400)
+
+        if request_shares > 0 and request_symbol:
+            db_shares = db.execute("SELECT SUM(shares) from transactions WHERE user_id = :id "
+                                   "AND symbol = :symbol", symbol=request_symbol, id=session['user_id'])[0][
+                'SUM(shares)']
+            if not db_shares:
+                return apology("wrong symbol", 400)
+            if db_shares >= request_shares:
+                stock = lookup(request_symbol)
+                db.execute("UPDATE users SET cash=(SELECT cash FROM users WHERE id = :user_id)+:cash WHERE id=:user_id",
+                           user_id=session['user_id'],
+                           cash=stock['price'] * request_shares)
+                db.execute("INSERT INTO transactions (user_id, symbol, shares, price) VALUES (:user_id, :symbol,"
+                           " :shares, :price)", user_id=session["user_id"], symbol=stock["symbol"],
+                           shares=-request_shares, price=stock["price"])
+                flash("Sold!")
+                return redirect("/")
+            else:
+                return apology("Too many shares", 400)
 
 
 def errorhandler(e):

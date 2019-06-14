@@ -6,22 +6,22 @@
 
 {% block main %}
 
-    <table class="table table-striped" style="text-align: left">
+    <table class="table table-striped">
         <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Shares</th>
-                <th>Price</th>
-                <th>Transacted</th>
-            </tr>
+        <tr>
+            <th>Symbol</th>
+            <th>Shares</th>
+            <th>Price</th>
+            <th>Transacted</th>
+        </tr>
         </thead>
         <tbody>
-        {% for transcation in transactions %}
+        {% for transaction in transactions %}
             <tr>
-                <td>{{ transcation['symbol'] }}</td>
-                <td>{{ transcation['shares'] }}</td>
-                <td>{{ transcation['price']|usd }}</td>
-                <td>{{ transcation['timestamp'] }}</td>
+                <td>{{ transaction['symbol'] }}</td>
+                <td>{{ transaction['shares'] }}</td>
+                <td>{{ transaction['price']|usd }}</td>
+                <td>{{ transaction['timestamp'] }}</td>
             </tr>
         {% endfor %}
         </tbody>

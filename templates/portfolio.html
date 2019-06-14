@@ -1,42 +1,56 @@
 {% extends "layout.html" %}
-
 {% block title %}
     Quote
 {% endblock %}
 
 {% block main %}
 
-    <table class="table table-striped" style="text-align: left">
+    <table class="table table-striped">
         <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Name</th>
-                <th>Shares</th>
-                <th>Price</th>
-                <th>Total</th>
-            </tr>
+        <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Shares</th>
+            <th>Price</th>
+            <th>Actions</th>
+            <th>Total</th>
+        </tr>
         </thead>
         <tfoot>
         <tr>
-            <td colspan="4"></td>
+            <td colspan="5"></td>
             <td style="font-weight: 700 ">{{ networth|usd }}</td>
         </tr>
         </tfoot>
         <tbody>
         {% for stock in portfolio %}
-            <tr>
+            <tr datatype="{{ stock['symbol'] }}">
                 <td>{{ stock['symbol'] }}</td>
                 <td>{{ stock['name'] }}</td>
                 <td>{{ stock['shares'] }}</td>
                 <td>{{ stock['price']|usd }}</td>
-                <td>{{ stock['total'] |usd}}</td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <input id="shares" autocomplete="off" class="form-control" min="1" name="shares" placeholder="Shares"
+                               type="number" style="width: 1em; margin-right: 4px"/>
+                        <div class="input-group-append">
+                            <button id="buy" class="btn btn-outline-secondary">Buy</button>
+                            <button id="sell" class="btn btn-outline-secondary">Sell</button>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ stock['total'] |usd }}</td>
             </tr>
         {% endfor %}
-            <tr>
-                <td colspan="4">CASH</td>
-                <td>{{ cash|usd }}</td>
-            </tr>
+        <tr>
+            <td>CASH</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>{{ cash|usd }}</td>
+        </tr>
         </tbody>
     </table>
-
+<script src ="../static/script.js"></script>
 {% endblock %}

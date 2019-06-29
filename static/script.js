@@ -8,7 +8,12 @@ function sendFormData(route, element) {
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send(body);
     xhr.onload = function () {
-        location.reload();
+        if(xhr.status === 200) {
+            location.reload();
+        }
+        else {
+            document.documentElement.innerHTML = xhr.responseText;
+        }
     }
 }
 
